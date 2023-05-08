@@ -1,0 +1,30 @@
+version: '3.7'
+services:
+  mongodb_container:
+    image: mongo:latest
+    container_name: dbConverterMongo
+    restart: always
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+
+    volumes:
+      - mongodb_data_container:/data/db
+
+  postgres:
+    image: postgres:14
+    container_name: dbConverterPostgres
+    restart: always
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: admin
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+    volumes:
+      - ./db:/var/lib/postgresql/data
+
+volumes:
+  mongodb_data_container:
