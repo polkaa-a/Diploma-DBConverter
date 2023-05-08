@@ -15,11 +15,6 @@ public class PostgreSQLDatabaseDTO extends DatabaseDTO<PostgreSQL> {
         this.tables = tables;
     }
 
-    public PostgreSQLDatabaseDTO(String name, PostgreSQL postgreSQL, Set<PostgreSQLTableDTO> tables) {
-        super(name, postgreSQL);
-        this.tables = tables;
-    }
-
     public final boolean setNewTableName(PostgreSQLTableDTO tableDTO, String newName) {
         var isCorrectName = tables.stream().filter(t -> t.getName().equals(newName)).toList().isEmpty();
         if (isCorrectName) {
