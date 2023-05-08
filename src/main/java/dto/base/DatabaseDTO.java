@@ -4,6 +4,8 @@ import database.Database;
 import lombok.Getter;
 import lombok.NonNull;
 
+// TODO: 08.05.2023 Разобраться нужен ли здесь параметр ???
+
 @Getter
 public abstract class DatabaseDTO<T extends Database> {
 
