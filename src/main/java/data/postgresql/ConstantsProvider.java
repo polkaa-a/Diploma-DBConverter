@@ -1,6 +1,7 @@
 package data.postgresql;
 
 import conversion.types.enums.PostgreSQLTypes;
+import dto.postgresql.PostgreSQLFieldDTO;
 
 import static conversion.types.enums.PostgreSQLTypes.INT;
 import static conversion.types.enums.PostgreSQLTypes.SERIAL;
@@ -17,4 +18,12 @@ public class ConstantsProvider {
     public static final String ID_COLUMN_NAME = "id";
     public static final PostgreSQLTypes PKCOLUMN_TYPE = SERIAL;
     public static final PostgreSQLTypes FKCOLUMN_TYPE = INT;
+
+    public static String getFKFieldName(String fieldName){
+        return fieldName + NAME_DELIMITER + ID_COLUMN_NAME;
+    }
+
+    public static String getMarkedFieldName(PostgreSQLFieldDTO fieldDTO){
+        return fieldDTO.getName() + NAME_DELIMITER + fieldDTO.getType().getMark();
+    }
 }
