@@ -12,6 +12,7 @@ import dto.postgresql.PostgreSQLForeignKeyDTO;
 import dto.postgresql.PostgreSQLTableDTO;
 import org.bson.BsonType;
 
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -22,6 +23,16 @@ public abstract class MongoDBDTOToPostgreSQLDTOConverter
         implements DTOToDTOConverter<MongoDBDatabaseDTO, PostgreSQLDatabaseDTO> {
 
     protected Set<PostgreSQLTableDTO> tables;
+
+    public final PostgreSQLDatabaseDTO convert(MongoDBDatabaseDTO mongoDBDatabaseDTO)  {
+        tables = new HashSet<>();
+        for (var collection : mongoDBDatabaseDTO.getCollections()) {
+            for (var documentDTO : collection.getDocuments()) {
+                makeTableFromDocumentOrAddAsSource(documentDTO);
+            }
+        }
+        return new PostgreSQLDatabaseDTO(mongoDBDatabaseDTO.getName(), tables);
+    }
 
     protected void makeTableFromDocument(MongoDBDocumentDTO documentDTO) {
         var documentId = documentDTO.getDocument().get(DOC_ID_COLUMN_NAME);

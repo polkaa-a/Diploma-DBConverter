@@ -4,16 +4,7 @@ import conversion.types.PostgresSQLTypesConverter;
 import dto.mongodb.MongoDBDocumentDTO;
 import dto.postgresql.PostgreSQLTableDTO;
 
-import java.util.stream.Stream;
-
-
-public class SimilarDocumentsToTableConverter extends MongoDBDTOToPostgreSQLDTOConverter {
-
-    @Override
-    protected void addAsSource(PostgreSQLTableDTO tableDTO, MongoDBDocumentDTO documentDTO) {
-        updateSimilarFields(tableDTO, documentDTO);
-        super.addAsSource(tableDTO, documentDTO);
-    }
+public class IdenticalDocumentsToTableConverter extends MongoDBDTOToPostgreSQLDTOConverter {
 
     @Override
     protected boolean isCompatible(PostgreSQLTableDTO tableDTO, MongoDBDocumentDTO documentDTO) {
@@ -23,7 +14,7 @@ public class SimilarDocumentsToTableConverter extends MongoDBDTOToPostgreSQLDTOC
         for (var docField : getDocumentFieldsThatCanBeMapped(documentDTO).toList()) {
             var type = PostgresSQLTypesConverter.convert(docField.getBsonType());
             var name = docField.getOriginalName();
-            var fields = Stream.concat(getSimilarFields(tableDTO, name, type), getIdenticalFields(tableDTO, name, type));
+            var fields = getIdenticalFields(tableDTO, name, type);
             if (fields.toList().isEmpty()) return false;
         }
         return true;
