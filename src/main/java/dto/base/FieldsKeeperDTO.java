@@ -3,8 +3,7 @@ package dto.base;
 import lombok.Getter;
 import lombok.NonNull;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Getter
 public abstract class FieldsKeeperDTO<T extends FieldDTO> {
@@ -15,11 +14,11 @@ public abstract class FieldsKeeperDTO<T extends FieldDTO> {
      * if dto is made from another dto we need source(s)
      * if dto is made from database sources can be empty
      */
-    protected final Set<FieldsKeeperDTO<? extends FieldDTO>> sources;
+    protected final List<FieldsKeeperDTO<? extends FieldDTO>> sources;
 
     public FieldsKeeperDTO() {
         fields = new HashSet<>();
-        sources = new HashSet<>();
+        sources = new ArrayList<>();
     }
 
     public boolean addSource(@NonNull FieldsKeeperDTO<? extends FieldDTO> source) {
@@ -30,11 +29,7 @@ public abstract class FieldsKeeperDTO<T extends FieldDTO> {
         return fields.add(fieldDTO);
     }
 
-    //by field's original name
-    public final Object getFieldValue(String fieldName) {
-        var fieldDTO = fields.stream().filter(f -> f.getOriginalName().equals(fieldName)).findAny();
-        return fieldDTO.map(FieldDTO::getValue).orElse(null);
-    }
+    public abstract List<Map<FieldDTO, Object>> getValues();
 
     @Override
     public abstract boolean equals(Object o);

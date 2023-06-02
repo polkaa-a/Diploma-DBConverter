@@ -1,43 +1,37 @@
 package dto.mongodb;
 
+import dto.base.FieldDTO;
 import dto.base.FieldsKeeperDTO;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.bson.Document;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 @Getter
 @Slf4j
 public class MongoDBDocumentDTO extends FieldsKeeperDTO<MongoDBFieldDTO> {
 
     @NonNull
-    private final Document document;
-    private final Map<String, MongoDBDocumentDTO> subDocuments;
+    protected final Document document;
+    protected final Map<String, MongoDBDocumentDTO> subDocuments;
+    protected final MongoDBCollectionDTO mongoDBCollectionDTO;
 
-    @Getter
-    private MongoDBCollectionDTO mongoDBCollectionDTO;
-
-    public MongoDBDocumentDTO(Document document) {
+    public MongoDBDocumentDTO(@NonNull Document document, @NonNull MongoDBCollectionDTO collectionDTO) {
         super();
         this.document = document;
+        this.mongoDBCollectionDTO = collectionDTO;
         subDocuments = new HashMap<>();
     }
 
     @Override
-    public boolean addField(@NonNull MongoDBFieldDTO fieldDTO) {
-        fieldDTO.setMongoDBDocumentDTO(this);
-        return super.addField(fieldDTO);
-    }
-
-    public boolean setMongoDBCollectionDTO(@NonNull MongoDBCollectionDTO mongoDBCollectionDTO) {
-        if (this.mongoDBCollectionDTO == null) {
-            this.mongoDBCollectionDTO = mongoDBCollectionDTO;
-            return true;
-        }
-        return false;
+    public List<Map<FieldDTO, Object>> getValues() {
+        var values = new LinkedHashMap<FieldDTO, Object>();
+        var list = new ArrayList<Map<FieldDTO, Object>>();
+        fields.forEach(f -> values.put(f, f.getValue()));
+        list.add(values);
+        return list;
     }
 
     @Override
@@ -54,5 +48,4 @@ public class MongoDBDocumentDTO extends FieldsKeeperDTO<MongoDBFieldDTO> {
     public int hashCode() {
         return fields.hashCode();
     }
-
 }

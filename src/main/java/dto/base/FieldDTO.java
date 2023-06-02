@@ -10,17 +10,22 @@ public abstract class FieldDTO {
     //name from real database
     protected final String originalName;
     //owner
-    protected final FieldsKeeperDTO<? extends FieldDTO> fieldDTOFieldsKeeperDTO;
+    protected final FieldsKeeperDTO<? extends FieldDTO> fieldsKeeperDTO;
+
+    protected final Object type;
+
     //changed name (if it was) or null
     protected String newName;
 
-    public FieldDTO(@NonNull String originalName, FieldsKeeperDTO<? extends FieldDTO> fieldDTOFieldsKeeperDTO) {
+    public FieldDTO(@NonNull String originalName,
+                    FieldsKeeperDTO<? extends FieldDTO> fieldsKeeperDTO, @NonNull Object type) {
         this.originalName = originalName;
-        this.fieldDTOFieldsKeeperDTO = fieldDTOFieldsKeeperDTO;
+        this.fieldsKeeperDTO = fieldsKeeperDTO;
+        this.type = type;
     }
 
     public final boolean setNewName(String newName) {
-        var fields = fieldDTOFieldsKeeperDTO.getFields();
+        var fields = fieldsKeeperDTO.getFields();
         var isCorrectName = fields.stream().filter(f -> f.getName().equals(newName)).toList().isEmpty();
         if (isCorrectName) {
             this.newName = newName;
@@ -32,9 +37,6 @@ public abstract class FieldDTO {
     public final String getName() {
         return Objects.requireNonNullElseGet(newName, this::getOriginalName);
     }
-
-    //returns field's value
-    public abstract Object getValue();
 
     //by name
     @Override

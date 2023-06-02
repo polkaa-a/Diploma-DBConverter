@@ -16,7 +16,7 @@ public abstract class Database {
         this.names = names;
     }
 
-    public abstract void lock();
+    public abstract void completeConversionWithError();
 
-    public abstract void unLock();
+    public abstract void completeConversionWithSuccess();
 }

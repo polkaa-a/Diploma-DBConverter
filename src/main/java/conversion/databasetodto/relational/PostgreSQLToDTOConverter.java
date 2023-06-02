@@ -9,20 +9,21 @@ import dto.postgresql.PostgreSQLForeignKeyDTO;
 import dto.postgresql.PostgreSQLTableDTO;
 import exceptions.ConversionException;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+import static data.ExceptionMessagesProvider.*;
 import static data.postgresql.ConstantsProvider.*;
-import static data.postgresql.ExceptionMessagesProvider.*;
 import static data.postgresql.QueryGenerator.getColumnsDataQuery;
 
 //DTOPostgreSQLConverter converts PostgreSQL to PostgreSQLDatabaseDTO
 public class PostgreSQLToDTOConverter implements DBToDTOConverter<PostgreSQL, PostgreSQLDatabaseDTO> {
 
-    private Set<PostgreSQLTableDTO> tablesDTO;
-    private PostgreSQL postgreSQL;
+    protected Set<PostgreSQLTableDTO> tablesDTO;
+    protected PostgreSQL postgreSQL;
 
     @Override
     public PostgreSQLDatabaseDTO convert(PostgreSQL postgreSQL) throws ConversionException {
@@ -33,15 +34,16 @@ public class PostgreSQLToDTOConverter implements DBToDTOConverter<PostgreSQL, Po
         return new PostgreSQLDatabaseDTO(postgreSQL.getName(), tablesDTO);
     }
 
-    private void addTable(String name) throws ConversionException {
+    protected void addTable(String name) throws ConversionException {
         if (postgreSQL.getAllTablesNames().contains(name)) {
             var tableDTO = new PostgreSQLTableDTO(name);
             makeFieldsDTOsFromTable(tableDTO);
+            addForeignKeysDTOs(tableDTO);
             tablesDTO.add(tableDTO);
         }
     }
 
-    private void makeFieldsDTOsFromTable(PostgreSQLTableDTO tableDTO) throws ConversionException {
+    protected void makeFieldsDTOsFromTable(PostgreSQLTableDTO tableDTO) throws ConversionException {
         var tableName = tableDTO.getOriginalName();
         try {
             var statement = postgreSQL.getConnection().createStatement();
@@ -51,21 +53,24 @@ public class PostgreSQLToDTOConverter implements DBToDTOConverter<PostgreSQL, Po
                 var dataType = resultSet.getString(DATA_TYPE);
                 var type = PostgresSQLTypesConverter.getType(dataType);
                 var isPK = isPrimary(columnName, tableName);
-                var foreignKeyDTO = getFK(columnName, tableName);
-                var fieldDTO = new PostgreSQLFieldDTO(columnName, type, isPK, foreignKeyDTO, tableDTO);
-                tableDTO.addField(fieldDTO);
+                new PostgreSQLFieldDTO(columnName, type, isPK, false, tableDTO);
             }
         } catch (SQLException exception) {
             throw new ConversionException(getMetadataExceptionMessage(tableName), exception);
         }
     }
 
-    private PostgreSQLForeignKeyDTO getFK(String columnName, String tableName) throws ConversionException {
+    protected PostgreSQLForeignKeyDTO
+    createFK(PostgreSQLFieldDTO fieldDTO, String tableName) throws ConversionException {
         try {
             var rs = postgreSQL.getDatabaseMetaData().getImportedKeys(null, null, tableName);
             while (rs.next()) {
-                if (columnName.equals(rs.getString(FKCOLUMN_NAME))) {
-                    return new PostgreSQLForeignKeyDTO(rs.getString(PKTABLE_NAME), rs.getString(PKCOLUMN_NAME));
+                if (fieldDTO.getOriginalName().equals(rs.getString(FKCOLUMN_NAME))) {
+                    for (var table : tablesDTO) {
+                        if (table.getOriginalName().equals(rs.getString(PKTABLE_NAME))) {
+                            return initFK(table, rs, fieldDTO);
+                        }
+                    }
                 }
             }
         } catch (SQLException exception) {
@@ -74,14 +79,34 @@ public class PostgreSQLToDTOConverter implements DBToDTOConverter<PostgreSQL, Po
         return null;
     }
 
-    private boolean isPrimary(String columnName, String tableName) throws ConversionException {
+    protected PostgreSQLForeignKeyDTO
+    initFK(PostgreSQLTableDTO table, ResultSet rs, PostgreSQLFieldDTO fieldDTO) throws SQLException {
+        for (var field : table.getFields()) {
+            if (field.getOriginalName().equals(rs.getString(PKCOLUMN_NAME))) {
+                var fk = new PostgreSQLForeignKeyDTO();
+                fk.setRelField(field);
+                fk.setCurField(fieldDTO);
+                fieldDTO.setFK(true);
+                return fk;
+            }
+        }
+        return null;
+    }
+
+    protected void addForeignKeysDTOs(PostgreSQLTableDTO tableDTO) throws ConversionException {
+        for (var field : tableDTO.getFields()) {
+            createFK(field, tableDTO.getOriginalName());
+        }
+    }
+
+    protected boolean isPrimary(String columnName, String tableName) throws ConversionException {
         for (var key : getTablePrimaryKeys(tableName)) {
             if (columnName.equals(key)) return true;
         }
         return false;
     }
 
-    private ArrayList<String> getTablePrimaryKeys(String tableName) throws ConversionException {
+    protected ArrayList<String> getTablePrimaryKeys(String tableName) throws ConversionException {
         var primaryKeys = new ArrayList<String>();
         try {
             var rs = postgreSQL.getDatabaseMetaData().getPrimaryKeys(null, null, tableName);

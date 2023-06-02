@@ -1,5 +1,9 @@
 package database;
 
+import com.mongodb.ReadConcern;
+import com.mongodb.TransactionOptions;
+import com.mongodb.WriteConcern;
+import com.mongodb.client.ClientSession;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import lombok.Getter;
@@ -12,12 +16,15 @@ import java.util.Set;
 @Getter
 public class MongoDB extends Database {
 
+    protected final ClientSession session;
     protected final MongoClient mongoClient;
     protected Set<MongoCollection<Document>> collections;
 
-    public MongoDB(@NonNull MongoClient mongoClient, String dbName, Set<String> names) {
+    public MongoDB(String dbName, Set<String> names, @NonNull MongoClient mongoClient) {
         super(dbName, names);
         this.mongoClient = mongoClient;
+        session = mongoClient.startSession();
+        setUpSession(session);
     }
 
     public Set<MongoCollection<Document>> getAllCollections() {
@@ -31,13 +38,24 @@ public class MongoDB extends Database {
         return collections;
     }
 
-    @Override
-    public void lock() {
-
+    public void setUpSession(ClientSession session) {
+        session.startTransaction(TransactionOptions.builder()
+                .readConcern(ReadConcern.SNAPSHOT)
+                .writeConcern(WriteConcern.MAJORITY)
+                .build());
     }
 
     @Override
-    public void unLock() {
+    public void completeConversionWithError() {
+        session.abortTransaction();
+        session.close();
+        mongoClient.close();
+    }
 
+    @Override
+    public void completeConversionWithSuccess() {
+        session.commitTransaction();
+        session.close();
+        mongoClient.close();
     }
 }

@@ -9,57 +9,63 @@ import dto.mongodb.MongoDBDatabaseDTO;
 import dto.mongodb.MongoDBDocumentDTO;
 import dto.mongodb.MongoDBFieldDTO;
 import exceptions.ConversionException;
+import lombok.extern.slf4j.Slf4j;
 import org.bson.BsonDocument;
 import org.bson.BsonType;
 import org.bson.Document;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 
 import static data.mongodb.ConstantsProvider.DOC_ID_COLUMN_NAME;
 
+@Slf4j
 //DTOMongoDBConverter converts MongoDB to MongoDBDatabaseDTO
 public class MongoDBToDTOConverter implements DBToDTOConverter<MongoDB, MongoDBDatabaseDTO> {
 
-    private Set<MongoDBCollectionDTO> collectionsDTO;
+    protected Set<MongoDBCollectionDTO> collectionsDTO;
 
     @Override
     public MongoDBDatabaseDTO convert(MongoDB mongoDB) throws ConversionException {
         collectionsDTO = new HashSet<>();
         //make from each collection MongoDBCollectionDTO
         mongoDB.getAllCollections().forEach(this::addCollection);
+        log.info("MongoDB is converted into MongoDBDatabaseDTO, database name: " + mongoDB.getName());
         return new MongoDBDatabaseDTO(mongoDB.getName(), collectionsDTO);
     }
 
-    private void addCollection(MongoCollection<Document> collection) {
+    protected void addCollection(MongoCollection<Document> collection) {
         var collectionName = collection.getNamespace().getCollectionName();
-        var documents = getDocumentsDTOsFromCollection(collection);
-        var docCollectionDTO = new MongoDBCollectionDTO(collectionName, documents);
-        collectionsDTO.add(docCollectionDTO);
+        var mongoCollectionDTO = new MongoDBCollectionDTO(collectionName);
+        convertDocumentsToDTOs(collection, mongoCollectionDTO);
+        collectionsDTO.add(mongoCollectionDTO);
+        log.info("Collection is converted into MongoDBCollectionDTO, collection name: " + collectionName);
     }
 
-    private List<MongoDBDocumentDTO> getDocumentsDTOsFromCollection(MongoCollection<Document> collection) {
-        var documentsDTOs = new ArrayList<MongoDBDocumentDTO>();
+    protected void convertDocumentsToDTOs(MongoCollection<Document> collection, MongoDBCollectionDTO collectionDTO) {
         for (var document : collection.find()) {
-            var documentDTO = getDTOFromDocument(document);
-            documentsDTOs.add(documentDTO);
+            var documentDTO = getDTOFromDocument(document, collectionDTO);
+            var id = document.get(DOC_ID_COLUMN_NAME);
+            collectionDTO.addDocument(documentDTO);
+            log.info("Document is converted into MongoDBDocumentDTO, document's _id: " + id);
         }
-        return documentsDTOs;
     }
 
-    // TODO: Убрать рекурсию
-    private MongoDBDocumentDTO getDTOFromDocument(Document document) {
-        var documentDTO = new MongoDBDocumentDTO(document);
+    protected MongoDBDocumentDTO getDTOFromDocument(Document document, MongoDBCollectionDTO collectionDTO) {
+        var documentDTO = new MongoDBDocumentDTO(document, collectionDTO);
         var subDocuments = new HashMap<String, MongoDBDocumentDTO>();
         for (var fieldName : document.keySet()) {
             var registry = MongoClient.getDefaultCodecRegistry();
             var bsonDocument = document.toBsonDocument(BsonDocument.class, registry);
             var bsonType = bsonDocument.get(fieldName).getBsonType();
             var isId = fieldName.equals(DOC_ID_COLUMN_NAME);
-            documentDTO.addField(new MongoDBFieldDTO(fieldName, bsonType, isId, documentDTO));
+            new MongoDBFieldDTO(fieldName, bsonType, isId, documentDTO);
             if (bsonType.equals(BsonType.DOCUMENT)) {
-                var subDocument = getDTOFromDocument((Document) document.get(fieldName));
-                subDocument.setMongoDBCollectionDTO(documentDTO.getMongoDBCollectionDTO());
+                var subDocument = getDTOFromDocument((Document) document.get(fieldName), collectionDTO);
+                var id = document.get(DOC_ID_COLUMN_NAME);
                 subDocuments.put(fieldName, subDocument);
+                log.info("Subdocument's DTO is created, fieldName: " + fieldName + ", document's _id: " + id);
             }
         }
         documentDTO.getSubDocuments().putAll(subDocuments);

@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Getter
 public class PostgreSQLDatabaseDTO extends DatabaseDTO<PostgreSQL> {
-    private final Set<PostgreSQLTableDTO> tables;
+    protected final Set<PostgreSQLTableDTO> tables;
 
     public PostgreSQLDatabaseDTO(String name, Set<PostgreSQLTableDTO> tables) {
         super(name);
@@ -16,7 +16,8 @@ public class PostgreSQLDatabaseDTO extends DatabaseDTO<PostgreSQL> {
     }
 
     public final boolean setNewTableName(PostgreSQLTableDTO tableDTO, String newName) {
-        var isCorrectName = tables.stream().filter(t -> t.getName().equals(newName)).toList().isEmpty();
+        var isCorrectName = tables.stream()
+                .filter(t -> t.getName().equals(newName)).toList().isEmpty();
         if (isCorrectName) {
             tableDTO.setNewName(newName);
             return true;

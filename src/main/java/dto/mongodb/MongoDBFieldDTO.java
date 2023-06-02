@@ -8,31 +8,16 @@ import org.bson.BsonType;
 @Getter
 public class MongoDBFieldDTO extends FieldDTO {
     @NonNull
-    private final BsonType bsonType;
-    @NonNull
-    private final boolean isId;
-
-    @Getter
-    //document that has this field
-    private MongoDBDocumentDTO mongoDBDocumentDTO;
+    protected final boolean isId;
 
     public MongoDBFieldDTO(String name, BsonType bsonType, boolean isId, MongoDBDocumentDTO documentDTO) {
-        super(name, documentDTO);
-        this.bsonType = bsonType;
+        super(name, documentDTO, bsonType);
         this.isId = isId;
+        documentDTO.addField(this);
     }
 
-    @Override
     public Object getValue() {
-        return mongoDBDocumentDTO.getDocument().get(originalName);
-    }
-
-    public boolean setMongoDBDocumentDTO(@NonNull MongoDBDocumentDTO mongoDBDocumentDTO) {
-        if (this.mongoDBDocumentDTO == null) {
-            this.mongoDBDocumentDTO = mongoDBDocumentDTO;
-            return true;
-        }
-        return false;
+        return ((MongoDBDocumentDTO) fieldsKeeperDTO).getDocument().get(originalName);
     }
 
     //by name and type
@@ -43,14 +28,13 @@ public class MongoDBFieldDTO extends FieldDTO {
         if (!super.equals(o)) return false;
 
         MongoDBFieldDTO fieldDTO = (MongoDBFieldDTO) o;
-
-        return bsonType == fieldDTO.bsonType;
+        return type == fieldDTO.type;
     }
 
     @Override
     public int hashCode() {
         int result = super.hashCode();
-        result = 31 * result + bsonType.hashCode();
+        result = 31 * result + type.hashCode();
         return result;
     }
 }

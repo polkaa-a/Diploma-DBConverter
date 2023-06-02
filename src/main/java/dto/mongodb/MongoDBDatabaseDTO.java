@@ -8,7 +8,7 @@ import java.util.Set;
 
 @Getter
 public class MongoDBDatabaseDTO extends DatabaseDTO<MongoDB> {
-    private final Set<MongoDBCollectionDTO> collections;
+    protected final Set<MongoDBCollectionDTO> collections;
 
     public MongoDBDatabaseDTO(String name, Set<MongoDBCollectionDTO> collections) {
         super(name);

@@ -38,8 +38,7 @@ public enum PostgreSQLTypes {
     TSVECTOR("tsvector", "tsvector"),
     VARCHAR("character varying", "varchar"),
     CHAR("character", "char"),
-    TEXT("text", "text"),
-    NULL("NULL", "null");
+    TEXT("text", "text");
 
     @Getter
     private final String name;
@@ -51,5 +50,4 @@ public enum PostgreSQLTypes {
         this.name = name;
         this.mark = mark;
     }
-
 }
